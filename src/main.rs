@@ -1,4 +1,4 @@
-use crossterm::{event::KeyEventKind, terminal::{enable_raw_mode, disable_raw_mode}};
+use crossterm::{event::KeyEventKind, terminal::{enable_raw_mode, disable_raw_mode}, style::Print};
 pub use crossterm::{
     cursor,
     event::{self, Event, KeyCode, KeyEvent},
@@ -7,7 +7,9 @@ pub use crossterm::{
     Command,
 };
 
-use std::io::{stdout, Write};
+use std::{io::{self,stdout, Write}, fs::File };
+mod linkedlist;
+use linkedlist::LinkedList;
 
 
 pub fn read_key() -> crossterm::Result<KeyEvent> {
@@ -20,61 +22,77 @@ pub fn read_key() -> crossterm::Result<KeyEvent> {
     }
 }
 
-fn main()  -> crossterm::Result<()>{
-
-    //TODO: what is the use of ? 
-
-    let mut stdout = stdout();
-
-    execute!(stdout, terminal::EnterAlternateScreen)?;
-
+fn setup(out: &mut io::Stdout) -> crossterm::Result<()> {
+    
+    execute!(out, terminal::EnterAlternateScreen)?;
     terminal::enable_raw_mode()?; // read somewhere does not echo the user input in raw mode
-
     execute!(
-        stdout,
+        out,
         style::ResetColor,
         terminal::Clear(terminal::ClearType::All),
         cursor::MoveTo(0, 0),
         cursor::SetCursorStyle::BlinkingUnderScore
-    )?; // Macro within crossterm for setting up the terminal
+    ) // Macro within crossterm for setting up the terminal
+}
 
-
-
+fn run(out: &mut io::Stdout, list: &mut LinkedList){
     loop {
         // if event::poll(std::time::Duration::from_secs(10)).unwrap() { // For some reason this does nothing to the code 
             if let Ok(key_event) = read_key() {
                 match key_event.code {
                     KeyCode::Char(c) => {
-                        print!("{}", c);
-                        stdout.flush().unwrap();
+                        queue!(out, Print(c));
+                        out.flush().unwrap();
+                        list.write(&[c as u8]);
                     },
                     KeyCode::Backspace => {
                         //remove char
                         print!("{} {}", 8 as char, 8 as char);
-                        stdout.flush().unwrap();
+                        out.flush().unwrap();
                         
                         //remove char and move cursor to the end of previous line
                         if cursor::position().unwrap().0 == 0 {
-                            execute!(stdout, cursor::MoveUp(1)).unwrap();
+                            execute!(out, cursor::MoveUp(1)).unwrap();
                             let (_, y) = cursor::position().unwrap();
-                            execute!(stdout, cursor::MoveRight(y)).unwrap();
+                            execute!(out, cursor::MoveRight(y)).unwrap();
                         }
-                        stdout.flush().unwrap();
+                        out.flush().unwrap();
                     },
                     KeyCode::Esc => {
+                        end(out);
                         break;
                     },
-                    KeyCode::Enter => println!(),
-                    KeyCode::Up => execute!(stdout, cursor::MoveUp(1)).unwrap(),
-                    KeyCode::Down => execute!(stdout, cursor::MoveDown(1)).unwrap(),
-                    KeyCode::Left => execute!(stdout, cursor::MoveLeft(1)).unwrap(),
-                    KeyCode::Right => execute!(stdout, cursor::MoveRight(1)).unwrap(),
+                    KeyCode::Enter => {
+                        println!();
+                        list.insert('\n');
+
+                    },
+                    KeyCode::Up => execute!(out, cursor::MoveUp(1)).unwrap(),
+                    KeyCode::Down => execute!(out, cursor::MoveDown(1)).unwrap(),
+                    KeyCode::Left => execute!(out, cursor::MoveLeft(1)).unwrap(),
+                    KeyCode::Right => execute!(out, cursor::MoveRight(1)).unwrap(),
                     _ => (),
                 }
             }
         // }
     }
-    execute!(stdout, terminal::LeaveAlternateScreen)?; // Leave alternate screen
-    terminal::disable_raw_mode()?;
-    Ok(())
+}
+
+fn end(out: &mut io::Stdout){
+    execute!(out, terminal::LeaveAlternateScreen); // Leave alternate screen
+    terminal::disable_raw_mode();
+}
+
+fn main(){ 
+    //TODO: what is the use of ?    
+    let mut list = LinkedList::new();
+    let mut out = stdout();
+    let mut file = File::create("out.txt");
+
+    
+    setup(&mut out);
+    run(&mut out,&mut list );
+    list.write_to_file(&mut file.unwrap());
+    println!("{:#?}", list);
+
 }
