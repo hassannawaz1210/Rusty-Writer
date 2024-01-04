@@ -1,0 +1,1 @@
+// Implement a cursor struct for our linked list to map the linkedlist data position to the terminal position

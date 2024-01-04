@@ -31,16 +31,6 @@ pub fn Read_Input(out: &mut io::Stdout, c: char, char_array: &mut [char; SIZE], 
     char_array[index] = c;
 }
 
-pub fn index_reset(mut index: usize) -> usize{
-    if index > 0 {
-        index = index - 1;
-        return index;
-    }
-    else{
-        return 0;
-    }
-}
-
 pub fn read_key() -> crossterm::Result<KeyEvent> {
     loop {
         if let Ok(Event::Key(key_event)) = event::read() {
@@ -66,12 +56,14 @@ fn setup(out: &mut io::Stdout) -> crossterm::Result<()> {
 fn run(out: &mut io::Stdout, list: &mut LinkedList) {
     loop {
         let mut ch_array = ['\0'; SIZE];
-        for mut i in 0..SIZE {
+        let mut i = 0;
+        while i < SIZE {
             if let Ok(key_event) = read_key() {
                 match key_event.code {
                     KeyCode::Char(c) => {
                         // if character read print on screen and place it into the array
                         Read_Input(out, c, &mut ch_array, i);
+                        i+=1
                     }
                     KeyCode::Backspace => {
                         //remove char
@@ -88,6 +80,7 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                     }
                     KeyCode::Esc => {
                         end(out);
+                        // inserting the array into the linked list 
                         let mut char_arr_ref: Rc<[char; SIZE]> = Rc::new(ch_array);
                         list.insert(char_arr_ref);
                         return;
@@ -97,26 +90,15 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                         println!();
                     }
                     KeyCode::Home => println!("Cursor position: {:?}\r", position()),
-                    KeyCode::Up => {
-                        execute!(out, cursor::MoveUp(1)).unwrap();
-                        index_reset(i);
-                    },
-                    KeyCode::Down => {
-                        execute!(out, cursor::MoveDown(1)).unwrap();
-                        index_reset(i);
-                    },
-                    KeyCode::Left => {
-                        execute!(out, cursor::MoveLeft(1)).unwrap();
-                        index_reset(i);
-                    }
-                    KeyCode::Right => {
-                        execute!(out, cursor::MoveRight(1)).unwrap();
-                        index_reset(i);
-                    }
+                    KeyCode::Up => execute!(out, cursor::MoveUp(1)).unwrap(),           
+                    KeyCode::Down => execute!(out, cursor::MoveDown(1)).unwrap(),                  
+                    KeyCode::Left => execute!(out, cursor::MoveLeft(1)).unwrap(),
+                    KeyCode::Right => execute!(out, cursor::MoveRight(1)).unwrap(),
                     _ => (),
                 }
             }
         }
+        // inserting the array into the linked list 
         let mut char_arr_ref: Rc<[char; SIZE]> = Rc::new(ch_array);
         list.insert(char_arr_ref);
     }
@@ -130,7 +112,7 @@ fn end(out: &mut io::Stdout) {
 fn main() {
     let mut list = LinkedList::new();
     let mut out = stdout();
-    let mut file = File::create("out.txt");
+    let mut file: Result<File, io::Error> = File::create("out.txt");
 
     setup(&mut out);
     run(&mut out, &mut list);
