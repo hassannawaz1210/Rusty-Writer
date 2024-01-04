@@ -15,11 +15,12 @@ use crossterm::{
 use std::{
     cell::Ref,
     fs::File,
-    io::{self, stdout, Write},
+    io::{self, stdout, Write, Cursor},
     rc::Rc,
 };
 
-
+mod cursedsor;
+use cursedsor::Cursedsor;
 
 mod linkedlist;
 use linkedlist::LinkedList;
@@ -53,6 +54,27 @@ fn setup(out: &mut io::Stdout) -> crossterm::Result<()> {
     ) // Macro within crossterm for setting up the terminal
 }
 
+fn refreshWindow(out: &mut io::Stdout, list: &mut LinkedList) {
+    //save mouse position
+    let (x, y) = cursor::position().unwrap();
+    //clear the screen
+    execute!(out, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0));
+
+    //print the linked list
+    let mut current = list.root.clone();
+    while let Some(node) = current {
+        let node = node.borrow();
+        let data = node.data.clone();
+        for i in 0..SIZE {
+            print!("{}", data[i]);
+            out.flush().unwrap();
+        }
+        current = node.next.clone();
+    }
+    //restore mouse position
+    execute!(out, cursor::MoveTo(x, y));
+}
+
 fn run(out: &mut io::Stdout, list: &mut LinkedList) {
     loop {
         let mut ch_array = ['\0'; SIZE];
@@ -60,9 +82,13 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
         while i < SIZE {
             if let Ok(key_event) = read_key() {
                 match key_event.code {
+                    KeyCode::Char(c) if key_event.modifiers == event::KeyModifiers::CONTROL && c == 's' => {
+                        println!("File saved.");
+                    },
                     KeyCode::Char(c) => {
                         // if character read print on screen and place it into the array
                         Read_Input(out, c, &mut ch_array, i);
+                        //refreshWindow(out, list);
                         i+=1
                     }
                     KeyCode::Backspace => {
@@ -71,7 +97,7 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                         out.flush().unwrap();
 
                         //remove char and move cursor to the end of previous line
-                        if cursor::position().unwrap().0 == 0 {
+                        if cursor::position().unwrap().0 == 0 {//.0 is x coordinate
                             execute!(out, cursor::MoveUp(1)).unwrap();
                             let (_, y) = cursor::position().unwrap();
                             execute!(out, cursor::MoveRight(y)).unwrap();
@@ -87,7 +113,8 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                     }
                     KeyCode::Enter => {
                         Read_Input(out, '\n', &mut ch_array, i);
-                        println!();
+                        i+=1;
+                        //println!();
                     }
                     KeyCode::Home => println!("Cursor position: {:?}\r", position()),
                     KeyCode::Up => execute!(out, cursor::MoveUp(1)).unwrap(),           
@@ -98,7 +125,7 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                 }
             }
         }
-        // inserting the array into the linked list 
+        // inserting filled array into the linked list 
         let mut char_arr_ref: Rc<[char; SIZE]> = Rc::new(ch_array);
         list.insert(char_arr_ref);
     }
@@ -113,6 +140,7 @@ fn main() {
     let mut list = LinkedList::new();
     let mut out = stdout();
     let mut file: Result<File, io::Error> = File::create("out.txt");
+    let cursor =  Cursedsor::new(list.root.clone());
 
     setup(&mut out);
     run(&mut out, &mut list);

@@ -44,7 +44,7 @@ impl Node{
 
 #[derive(Debug)]
 pub struct LinkedList{
-    root: Option<Rc<RefCell<Node>>>,
+   pub root: Option<Rc<RefCell<Node>>>,
     last: Option<Rc<RefCell<Node>>>,
 }
 
