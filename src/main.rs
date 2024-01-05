@@ -16,7 +16,7 @@ use std::{
     cell::Ref,
     fs::{File, DirBuilder},
     io::{self, stdout, Write, Cursor},
-    rc::Rc,
+    rc::Rc, borrow::BorrowMut,
 };
 
 mod cursedsor;
@@ -80,7 +80,10 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
     let mut cursor =  Cursedsor::new(list.root.clone());
 
     loop {
-        let mut ch_array = ['\0'; SIZE];
+        list.add_node(); //new node is added to the linked list
+        //TODO:: Extract array from last node into a current_array variable 
+        let last_node = list.get_last();
+         let current_array = ????????????????????
         let mut i = 0;
         while i < SIZE {
             if let Ok(key_event) = read_key() {
@@ -90,11 +93,17 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                     },
                     KeyCode::Char(c) => {
                         // if character read print on screen and place it into the array
-                        Read_Input(out, c, &mut ch_array, i);
+                       // Read_Input(out, c, &mut ch_array, i);
+                        //current_array.data[i] = c;
                         //refreshWindow(out, list);
+
+                        current_array.data[i] = c;
+                        //^^^^^^^^^^^^^^^^^^^^^^//
+                        
                         i+=1;
                         // cursor.increment_index();
-                        // cursor.move_cursor(Direction::Right, );
+                         cursor.move_cursor(Direction::Right, list.get_number_of_nodes());
+                        // cursor.print();
                     }
                     KeyCode::Backspace => {
                         //remove char
@@ -112,12 +121,12 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                     KeyCode::Esc => {
                         end(out);
                         // inserting the array into the linked list 
-                        let mut char_arr_ref: Rc<[char; SIZE]> = Rc::new(ch_array);
-                        list.insert(char_arr_ref);
+                       // let mut char_arr_ref: Rc<[char; SIZE]> = Rc::new(ch_array);
+                       // list.insert(char_arr_ref);
                         return;
                     }
                     KeyCode::Enter => {
-                        Read_Input(out, '\n', &mut ch_array, i);
+                       // Read_Input(out, '\n', &mut ch_array, i);
                         i+=1;
                         //println!();
                     }
@@ -125,22 +134,23 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                     KeyCode::Up => execute!(out, cursor::MoveUp(1)).unwrap(),           
                     KeyCode::Down => execute!(out, cursor::MoveDown(1)).unwrap(),                  
                     KeyCode::Left => {
-                        execute!(out, cursor::MoveLeft(1)).unwrap();
-                        cursor.move_cursor(Direction::Left);
-                        cursor.print();
+                        if cursor.move_cursor(Direction::Left, list.get_number_of_nodes()) {
+                            execute!(out, cursor::MoveLeft(1)).unwrap();
+                        }
+                       // cursor.print();
                     }
                     KeyCode::Right => {
-                        execute!(out, cursor::MoveRight(1)).unwrap();
-                        cursor.move_cursor(Direction::Right);
-                        cursor.print();
+                        if cursor.move_cursor(Direction::Right, list.get_number_of_nodes()) {
+                            execute!(out, cursor::MoveRight(1)).unwrap();
+                        }
                     }
                     _ => (),
                 }
             }
         }
         // inserting filled array into the linked list 
-        let mut char_arr_ref: Rc<[char; SIZE]> = Rc::new(ch_array);
-        list.insert(char_arr_ref);
+      //  let mut char_arr_ref: Rc<[char; SIZE]> = Rc::new(ch_array);
+       // list.insert(char_arr_ref);
 
     }
 }

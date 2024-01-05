@@ -4,6 +4,7 @@ use std::rc::Rc;
 use std::cell::RefCell;
 use std::borrow::{BorrowMut, Borrow};
 use std::io::{self, Write};
+use std::cell::RefMut;
 
 pub const SIZE: usize = 10;
 
@@ -46,11 +47,12 @@ impl Node{
 pub struct LinkedList{
    pub root: Option<Rc<RefCell<Node>>>,
     last: Option<Rc<RefCell<Node>>>,
+    number_of_nodes: usize,
 }
 
 impl LinkedList{
     pub fn new () -> Self{
-        LinkedList{root: None, last: None}
+        LinkedList{root: None, last: None , number_of_nodes: 0}
     }
 
     pub fn insert(&mut self, data: Rc<[char; SIZE]>) {
@@ -58,7 +60,8 @@ impl LinkedList{
         // if the root and last are none
         if self.root.is_none() {
             self.root = boxed_node.clone();
-            self.last = self.root.clone();
+            self.last = boxed_node.clone();
+            self.number_of_nodes += 1;
         }
         // Insert another node 
         else {
@@ -67,10 +70,36 @@ impl LinkedList{
                 (*node_ref).next = boxed_node.clone();
             }
             self.last = boxed_node.clone(); 
+            self.number_of_nodes += 1;
         }
     }
 
+    //add_node and insert are the same except add_node is creating a node with empty array
+    pub fn add_node(&mut self)
+    {
+                // if the root and last are none
+                let boxed_node = Some(Rc::new(RefCell::new(Node::new(Rc::new(['\0'; SIZE])))));
+                if self.root.is_none() {
+                    self.root = boxed_node.clone();
+                    self.last = boxed_node.clone();
+                    self.number_of_nodes += 1;
+                }
+                // Insert another node 
+                else {
+                    if let Some(last) = &self.last { 
+                        let mut node_ref = RefCell::borrow_mut(&last); 
+                        (*node_ref).next = boxed_node.clone();
+                    }
+                    self.last = boxed_node.clone(); 
+                    self.number_of_nodes += 1;
+                
+                }
+    }
 
+    pub fn get_last(&mut self) ->  Option<Rc<RefCell<Node>>> {
+        self.last.clone()
+    }
+        
 
     pub fn write_to_file(&self, f: &mut File) {
         let mut current = self.root.clone();
@@ -83,6 +112,10 @@ impl LinkedList{
             }
             current = node_ref.next.clone();
         } 
+    }
+
+    pub fn get_number_of_nodes(&self) -> usize {
+        self.number_of_nodes
     }
 
 
