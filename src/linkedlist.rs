@@ -58,7 +58,7 @@ impl LinkedList{
         // if the root and last are none
         if self.root.is_none() {
             self.root = boxed_node.clone();
-            self.last = boxed_node.clone();
+            self.last = self.root.clone();
         }
         // Insert another node 
         else {

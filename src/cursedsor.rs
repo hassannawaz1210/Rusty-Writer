@@ -2,11 +2,10 @@
 
 use std::{cell::RefCell, borrow::Borrow};
 use std::rc::Rc;
-pub const SIZE: usize = 10;
 
-use crate::linkedlist::{LinkedList, Node};
+use crate::linkedlist::{LinkedList, Node, SIZE};
 
-enum Direction {
+pub enum Direction {
     Left,
     Right,
 }
@@ -26,7 +25,14 @@ impl Cursedsor {
         }
     }
 
-   pub fn move_cursor(&mut self,  linked_list: Option<Rc<RefCell<Node>>>, direction: Direction) -> bool {
+    // pub fn increment_index(&mut self){
+    //     if self.index >  {
+    //         self.index = self.index + 1; 
+    //     }
+    // }
+
+
+   pub fn move_cursor(&mut self, direction: Direction, ) -> bool {
         match direction {
             Direction::Left => {
                 if self.index > 0 {//cursor movement inside current node
@@ -37,9 +43,10 @@ impl Cursedsor {
                         return false;
                     }
                     let mut i = self.current_node.0 - 1; //run loop current_node-1 times to get to the previous node
-                    self.current_node = (0, self.linked_list);
+                    self.current_node = (0, self.linked_list.clone());
                     while i > 0 {
-                        if let Some(next_node) = &self.current_node.1.as_ref().unwrap().borrow().next {
+                        if let Some(next_node) = &self.current_node.1.as_ref().unwrap().clone().borrow_mut().next {
+                            // let b = next_node.clone();
                             self.current_node = (self.current_node.0 + 1, Some(Rc::clone(next_node)));
                         }
                         i -= 1;
@@ -53,7 +60,7 @@ impl Cursedsor {
                     self.index += 1;
                     return true;
                 } else { //move cursor to the next node
-                    if let Some(node) = &self.current_node.1.as_ref().unwrap().borrow().next {
+                    if let Some(node) = &self.current_node.1.as_ref().unwrap().clone().borrow_mut().next {
                         self.current_node = (self.current_node.0 + 1, Some(Rc::clone(node)));
                         self.index = 0;
                         return true;
@@ -65,8 +72,16 @@ impl Cursedsor {
     }
 
    pub fn getNextChar(&self) -> char { //return char that is next to current cursor position
-        let node = self.current_node.1.as_ref().unwrap().borrow();
-        node.data[self.index]
+        let sh: Option<Rc<RefCell<Node>>> = self.current_node.1.clone();
+        if let Some(node) = &sh {
+            let bruh = RefCell::borrow_mut(&node);
+            bruh.data[self.index]
+        } else {return '\n';}
+    }
+
+    pub fn print(&self){
+        print!("Node: {:#?}",self.current_node);
+        print!("Index: {}", self.index);
     }
 
 }

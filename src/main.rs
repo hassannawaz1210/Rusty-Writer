@@ -14,13 +14,14 @@ use crossterm::{
 
 use std::{
     cell::Ref,
-    fs::File,
+    fs::{File, DirBuilder},
     io::{self, stdout, Write, Cursor},
     rc::Rc,
 };
 
 mod cursedsor;
 use cursedsor::Cursedsor;
+use cursedsor::Direction;
 
 mod linkedlist;
 use linkedlist::LinkedList;
@@ -54,28 +55,30 @@ fn setup(out: &mut io::Stdout) -> crossterm::Result<()> {
     ) // Macro within crossterm for setting up the terminal
 }
 
-fn refreshWindow(out: &mut io::Stdout, list: &mut LinkedList) {
-    //save mouse position
-    let (x, y) = cursor::position().unwrap();
-    //clear the screen
-    execute!(out, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0));
+// fn refreshWindow(out: &mut io::Stdout, list: &mut LinkedList) {
+//     //save mouse position
+//     let (x, y) = cursor::position().unwrap();
+//     //clear the screen
+//     execute!(out, terminal::Clear(ClearType::All), cursor::MoveTo(0, 0));
 
-    //print the linked list
-    let mut current = list.root.clone();
-    while let Some(node) = current {
-        let node = node.borrow();
-        let data = node.data.clone();
-        for i in 0..SIZE {
-            print!("{}", data[i]);
-            out.flush().unwrap();
-        }
-        current = node.next.clone();
-    }
-    //restore mouse position
-    execute!(out, cursor::MoveTo(x, y));
-}
+//     //print the linked list
+//     let mut current = list.root.clone();
+//     while let Some(node) = current {
+//         let node = node.borrow();
+//         let data = node.data.clone();
+//         for i in 0..SIZE {
+//             print!("{}", data[i]);
+//             out.flush().unwrap();
+//         }
+//         current = node.next.clone();
+//     }
+//     //restore mouse position
+//     execute!(out, cursor::MoveTo(x, y));
+// }
 
 fn run(out: &mut io::Stdout, list: &mut LinkedList) {
+    let mut cursor =  Cursedsor::new(list.root.clone());
+
     loop {
         let mut ch_array = ['\0'; SIZE];
         let mut i = 0;
@@ -89,7 +92,9 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                         // if character read print on screen and place it into the array
                         Read_Input(out, c, &mut ch_array, i);
                         //refreshWindow(out, list);
-                        i+=1
+                        i+=1;
+                        // cursor.increment_index();
+                        // cursor.move_cursor(Direction::Right, );
                     }
                     KeyCode::Backspace => {
                         //remove char
@@ -119,8 +124,16 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
                     KeyCode::Home => println!("Cursor position: {:?}\r", position()),
                     KeyCode::Up => execute!(out, cursor::MoveUp(1)).unwrap(),           
                     KeyCode::Down => execute!(out, cursor::MoveDown(1)).unwrap(),                  
-                    KeyCode::Left => execute!(out, cursor::MoveLeft(1)).unwrap(),
-                    KeyCode::Right => execute!(out, cursor::MoveRight(1)).unwrap(),
+                    KeyCode::Left => {
+                        execute!(out, cursor::MoveLeft(1)).unwrap();
+                        cursor.move_cursor(Direction::Left);
+                        cursor.print();
+                    }
+                    KeyCode::Right => {
+                        execute!(out, cursor::MoveRight(1)).unwrap();
+                        cursor.move_cursor(Direction::Right);
+                        cursor.print();
+                    }
                     _ => (),
                 }
             }
@@ -128,6 +141,7 @@ fn run(out: &mut io::Stdout, list: &mut LinkedList) {
         // inserting filled array into the linked list 
         let mut char_arr_ref: Rc<[char; SIZE]> = Rc::new(ch_array);
         list.insert(char_arr_ref);
+
     }
 }
 
@@ -140,7 +154,6 @@ fn main() {
     let mut list = LinkedList::new();
     let mut out = stdout();
     let mut file: Result<File, io::Error> = File::create("out.txt");
-    let cursor =  Cursedsor::new(list.root.clone());
 
     setup(&mut out);
     run(&mut out, &mut list);
