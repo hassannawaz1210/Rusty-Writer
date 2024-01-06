@@ -119,9 +119,11 @@ impl LinkedList {
 
     pub fn get_row_len(&mut self) -> usize {
        //count the number of characters in linkedlist
+       //fukin copepilot 
          let mut current = self.root.clone();
             let mut count = 1;
             count *= self.number_of_nodes  - 1;
+            count *= SIZE;
             if let Some(node) = &self.last {
                 let node_ref = RefCell::borrow_mut(&node);
                 count += node_ref.current_index;

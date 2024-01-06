@@ -72,8 +72,14 @@ impl TextEditor {
                 if let Ok(key_event) = TextEditor::read_key() {
                     match key_event.code {
                         KeyCode::Char(c)
-                        if key_event.modifiers == event::KeyModifiers::CONTROL && c == 's' =>{
-                            println!("File saved.");
+                            if key_event.modifiers == event::KeyModifiers::CONTROL && c == 's' => {
+                                // save file
+                                let mut file = std::fs::File::create("test.txt").unwrap();
+                                for row in self.rows.iter() {
+                                    row.write_to_file(file.borrow_mut());
+                                    file.write_all(b"\n").unwrap();
+                                };
+                                println!("File saved.");
                         }
 
                         KeyCode::Char(c) => {
@@ -107,10 +113,9 @@ impl TextEditor {
                         }
 
                         KeyCode::Enter => {
-                            if let Some(ref node) = node {
-                                let mut node_ref = RefCell::borrow_mut(&node);
-                                node_ref.add_char('\n');
-                            }
+                            // if let Some(ref node) = node {
+                            //     let mut node_ref = RefCell::borrow_mut(&node);
+                            // }
                             
                             self.rows.push(LinkedList::new());
                             println!();
@@ -118,10 +123,9 @@ impl TextEditor {
                             break;
                         }
                         KeyCode::Home => println!("Cursor position: {:?}\r", position()),
-                        KeyCode::Up => 
-                        {
-                            self.cursor.update();
-                            if 0 < self.cursor.getY() {
+                        KeyCode::Up =>  {
+                           
+                            if self.cursor.getY() > 0   {
                                 let current_row_len = self.rows.get_mut(self.cursor.getY()).unwrap().get_row_len();
                                 let upper_row_len = self.rows.get_mut(self.cursor.getY() - 1).unwrap().get_row_len();
                                 
@@ -133,33 +137,39 @@ impl TextEditor {
                             }
                         }
 
-                        KeyCode::Down => 
-                        {
-                            self.cursor.update();
-                            let current_row_len = self.rows.get_mut(self.cursor.getY()).unwrap().get_row_len();
-                            let lower_row_len = self.rows.get_mut(self.cursor.getY() + 1).unwrap().get_row_len();
+                        KeyCode::Down => {
+                            
+                            if self.rows.len() - 1 > self.cursor.getY() {
+                                let current_row_len = self.rows.get_mut(self.cursor.getY()).unwrap().get_row_len();
+                                let lower_row_len = self.rows.get_mut(self.cursor.getY() + 1).unwrap().get_row_len();
 
-                            if current_row_len <= lower_row_len || self.cursor.getX() <= lower_row_len  {
-                                execute!(self.stdout, cursor::MoveDown(1)).unwrap();
-                            } else  {
-                                execute!(self.stdout, cursor::MoveTo(lower_row_len as u16, (self.cursor.getY() + 1) as u16)).unwrap();
+                                if current_row_len <= lower_row_len || self.cursor.getX() <= lower_row_len  {
+                                    execute!(self.stdout, cursor::MoveDown(1)).unwrap();
+                                } else  {
+                                    execute!(self.stdout, cursor::MoveTo(lower_row_len as u16, (self.cursor.getY() + 1) as u16)).unwrap();
+                                }
                             }
+                            
                         }
 
                         KeyCode::Left => {
-                            let row = self.rows.get_mut(self.cursor.getY()).unwrap();
-                            let moveleft = self.cursor.move_cursor(Direction::Left, row.get_number_of_nodes(), row.get_last());
-                            if moveleft {
+                            // Hassan u were right there is an easier way XD
+                            if self.cursor.getX() > 0 {
                                 execute!(self.stdout, cursor::MoveLeft(1)).unwrap();
+                            } else if self.cursor.getY() > 0 { // if the cursor is at the start of the line move upwards and to the end of the line
+                                let upper_row_len = self.rows.get_mut(self.cursor.getY() - 1).unwrap().get_row_len();
+                                execute!(self.stdout, cursor::MoveTo(upper_row_len as u16, (self.cursor.getY() - 1) as u16)).unwrap();
                             }
-                        }
+                                
+                            }
 
                         KeyCode::Right => {
-                            let row = self.rows.get_mut(self.cursor.getY()).unwrap();
-                            let moveright = self.cursor.move_cursor(Direction::Right, row.get_number_of_nodes(), row.get_last());
-                            if moveright {
+                            let current_row_len = self.rows.get_mut(self.cursor.getY()).unwrap().get_row_len();
+
+                            if current_row_len > self.cursor.getX() {
                                 execute!(self.stdout, cursor::MoveRight(1)).unwrap();
                             }
+
                         }
                         _ => (),
                     }

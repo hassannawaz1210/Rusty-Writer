@@ -59,7 +59,7 @@ impl Cursedsor {
         self.current_node = (self.termCursor.x / SIZE) + 1;
         self.index = (self.termCursor.x % SIZE);
     }
-
+//  this whole func is useless 
     pub fn move_cursor(
         &mut self,
         direction: Direction,
@@ -84,6 +84,9 @@ impl Cursedsor {
                     }
                 }
             }
+
+            //  All this is useless XD
+
             Direction::Right => {
                 if self.current_node < number_of_nodes {
                     //move cursor to the next node
