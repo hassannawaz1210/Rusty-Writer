@@ -5,28 +5,10 @@ use crossterm::{execute, terminal, event::{KeyEvent, KeyEventKind, self, Event, 
 use crate::{linkedlist::{LinkedList, SIZE, Node}, cursedsor::Direction};
 use crate::cursedsor::Cursedsor;
 // This struct is used to get the terminal cursor position is also used for changing the indexes of vector
-pub struct TerminalCursor {
-    x: usize,
-    y: usize,
-}
 
-impl TerminalCursor {
-    pub fn new() -> Self {
-        TerminalCursor {
-            x: 0,
-            y: 0,
-        }
-    }
-    pub fn update(&mut self) {
-        let (x, y) = crossterm::cursor::position().unwrap();
-        self.x = x as usize;
-        self.y = y as usize;
-    }
-}
 
 pub struct TextEditor {
     pub rows: Vec<LinkedList>,
-    terminal_cursor: TerminalCursor,
     cursor: Cursedsor,
     stdout: Stdout,
 }
@@ -35,7 +17,6 @@ impl TextEditor {
         let mut tx = TextEditor {
             rows: Vec::new(),
             cursor : Cursedsor::new(),
-            terminal_cursor: TerminalCursor::new(),
             stdout: stdout(),
         };
         tx.rows.push(LinkedList::new()); // inserting the first row 
@@ -56,7 +37,6 @@ impl TextEditor {
             }
         }
     }
-
     
     pub fn Read_Input(&mut self , c: char) {
         queue!(self.stdout, Print(c));
@@ -78,12 +58,12 @@ impl TextEditor {
 
 
     pub fn run(&mut self) {    
-        let mut ch_array = ['\0'; SIZE];
+        let ch_array = ['\0'; SIZE];
         loop {
             // Making a node on heap making the linked list point to it and then adding characters to the node.
             //hope this is idiomatic enough
             let node = Some(Rc::new(RefCell::new(Node::new(ch_array))));
-            self.rows.get_mut(self.terminal_cursor.y).unwrap().new_node(node.clone());
+            self.rows.get_mut(self.cursor.getY()).unwrap().new_node(node.clone());
 
             let mut i = 0;
 
@@ -95,6 +75,7 @@ impl TextEditor {
                         if key_event.modifiers == event::KeyModifiers::CONTROL && c == 's' =>{
                             println!("File saved.");
                         }
+
                         KeyCode::Char(c) => {
                             // if character read print on screen and place it into the array
                             if let Some(ref node) = node {
@@ -102,11 +83,9 @@ impl TextEditor {
                                 self.Read_Input(c);
                                 node_ref.add_char(c);
                                 i += 1;
-                                
-                                // let mut row = self.rows.get_mut(self.terminal_cursor.y).unwrap();
-                                // let moveright = self.cursor.move_cursor(Direction::Right, row.get_number_of_nodes(), row.get_last(), self.terminal_cursor.x);
                             }
                         }
+
                         KeyCode::Backspace => {
                             //remove char
                             print!("{} {}", 8 as char, 8 as char);
@@ -121,44 +100,53 @@ impl TextEditor {
                             }
                             self.stdout.flush().unwrap();
                         }
+
                         KeyCode::Esc => {
                             self.end();
-                            self.rows.get_mut(self.terminal_cursor.y).unwrap().new_node(node.clone());
                             return;
                         }
+
                         KeyCode::Enter => {
-                            let row_list = self.rows.get_mut(self.terminal_cursor.y).unwrap();
-                            
                             if let Some(ref node) = node {
                                 let mut node_ref = RefCell::borrow_mut(&node);
                                 node_ref.add_char('\n');
                             }
                             
                             self.rows.push(LinkedList::new());
-                            self.terminal_cursor.update();
+                            self.cursor.update();
                             println!();
                             break;
                         }
                         KeyCode::Home => println!("Cursor position: {:?}\r", position()),
-                        KeyCode::Up => execute!(self.stdout, cursor::MoveUp(1)).unwrap(),
-                        KeyCode::Down => execute!(self.stdout, cursor::MoveDown(1)).unwrap(),
-                        KeyCode::Left => {
-                            execute!(self.stdout, cursor::MoveLeft(1)).unwrap();
-                            let mut row = self.rows.get_mut(self.terminal_cursor.y).unwrap();
-                            let moveleft = self.cursor.move_cursor(Direction::Left, row.get_number_of_nodes(), row.get_last(), self.terminal_cursor.x);
+                        KeyCode::Up => 
+                        {
+                            execute!(self.stdout, cursor::MoveUp(1)).unwrap()
                         }
+
+                        KeyCode::Down => 
+                        {
+                            execute!(self.stdout, cursor::MoveDown(1)).unwrap()
+                        }
+
+                        KeyCode::Left => {
+                            let row = self.rows.get_mut(self.cursor.getY()).unwrap();
+                            let moveleft = self.cursor.move_cursor(Direction::Left, row.get_number_of_nodes(), row.get_last());
+                            if moveleft {
+                                execute!(self.stdout, cursor::MoveLeft(1)).unwrap();
+                            }
+                        }
+
                         KeyCode::Right => {
-                            let mut row = self.rows.get_mut(self.terminal_cursor.y).unwrap();
-                            let moveright = self.cursor.move_cursor(Direction::Right, row.get_number_of_nodes(), row.get_last(), self.terminal_cursor.x);
+                            let row = self.rows.get_mut(self.cursor.getY()).unwrap();
+                            let moveright = self.cursor.move_cursor(Direction::Right, row.get_number_of_nodes(), row.get_last());
                             if moveright {
                                 execute!(self.stdout, cursor::MoveRight(1)).unwrap();
                             }
-                            // self.cursor.print();
                         }
                         _ => (),
                     }
                 }
-                self.terminal_cursor.update(); 
+                self.cursor.update(); 
             }
 
         }
