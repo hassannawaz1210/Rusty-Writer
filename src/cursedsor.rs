@@ -15,10 +15,7 @@ pub struct TerminalCursor {
 
 impl TerminalCursor {
     pub fn new() -> Self {
-        TerminalCursor {
-            x: 0,
-            y: 0,
-        }
+        TerminalCursor { x: 0, y: 0 }
     }
     pub fn update(&mut self) {
         let (x, y) = crossterm::cursor::position().unwrap();
@@ -67,7 +64,7 @@ impl Cursedsor {
         &mut self,
         direction: Direction,
         number_of_nodes: usize,
-        last: Option<Rc<RefCell<Node>>>, 
+        last: Option<Rc<RefCell<Node>>>,
     ) -> bool {
         self.update();
 
@@ -88,21 +85,18 @@ impl Cursedsor {
                 }
             }
             Direction::Right => {
-
                 if self.current_node < number_of_nodes {
                     //move cursor to the next node
                     if self.index < SIZE {
                         //cursor movement inside current node
                         self.index += 1;
                         return true;
-                    }
-                    else{
+                    } else {
                         self.current_node += 1;
                         self.index = 0;
                         return true;
                     }
-                }
-                else if self.current_node == number_of_nodes {
+                } else if self.current_node == number_of_nodes {
                     if let Some(last) = last {
                         if self.index < last.borrow_mut().current_index {
                             self.index += 1;
@@ -111,13 +105,13 @@ impl Cursedsor {
                     }
                     return false;
                 }
-
-                }
             }
-            false
         }
-        pub fn print(&self) {
-            print!("Node: {}", self.current_node);
-            print!("Index: {}", self.index);
-        }
+
+        false
+    }
+    pub fn print(&self) {
+        print!("Node: {}", self.current_node);
+        print!("Index: {}", self.index);
+    }
 }

@@ -113,19 +113,37 @@ impl TextEditor {
                             }
                             
                             self.rows.push(LinkedList::new());
-                            self.cursor.update();
                             println!();
+                            self.cursor.update();
                             break;
                         }
                         KeyCode::Home => println!("Cursor position: {:?}\r", position()),
                         KeyCode::Up => 
                         {
-                            execute!(self.stdout, cursor::MoveUp(1)).unwrap()
+                            self.cursor.update();
+                            if 0 < self.cursor.getY() {
+                                let current_row_len = self.rows.get_mut(self.cursor.getY()).unwrap().get_row_len();
+                                let upper_row_len = self.rows.get_mut(self.cursor.getY() - 1).unwrap().get_row_len();
+                                
+                                if current_row_len <= upper_row_len || self.cursor.getX() <= upper_row_len {
+                                    execute!(self.stdout, cursor::MoveUp(1)).unwrap();
+                                } else {
+                                    execute!(self.stdout, cursor::MoveTo(upper_row_len as u16, (self.cursor.getY() - 1) as u16)).unwrap();
+                                }
+                            }
                         }
 
                         KeyCode::Down => 
                         {
-                            execute!(self.stdout, cursor::MoveDown(1)).unwrap()
+                            self.cursor.update();
+                            let current_row_len = self.rows.get_mut(self.cursor.getY()).unwrap().get_row_len();
+                            let lower_row_len = self.rows.get_mut(self.cursor.getY() + 1).unwrap().get_row_len();
+
+                            if current_row_len <= lower_row_len || self.cursor.getX() <= lower_row_len  {
+                                execute!(self.stdout, cursor::MoveDown(1)).unwrap();
+                            } else  {
+                                execute!(self.stdout, cursor::MoveTo(lower_row_len as u16, (self.cursor.getY() + 1) as u16)).unwrap();
+                            }
                         }
 
                         KeyCode::Left => {

@@ -117,6 +117,18 @@ impl LinkedList {
         self.last.clone()
     }
 
+    pub fn get_row_len(&mut self) -> usize {
+       //count the number of characters in linkedlist
+         let mut current = self.root.clone();
+            let mut count = 1;
+            count *= self.number_of_nodes  - 1;
+            if let Some(node) = &self.last {
+                let node_ref = RefCell::borrow_mut(&node);
+                count += node_ref.current_index;
+            }
+            count
+    }
+
     pub fn write_to_file(&self, f: &mut File) {
         let mut current = self.root.clone();
         while let Some(node) = current {
