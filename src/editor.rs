@@ -1,4 +1,4 @@
-use std::{io::{stdout, Stdout, Write}, borrow::{Borrow, BorrowMut}, cell::RefCell, rc::Rc};
+use std::{io::{stdout, Stdout, Write}, borrow::{Borrow, BorrowMut}, cell::RefCell, rc::Rc, sync::Arc};
 
 use crossterm::{execute, terminal, event::{KeyEvent, KeyEventKind, self, Event, KeyCode}, cursor::{self, position}, style::{self, Print}, QueueableCommand, queue};
 
@@ -83,9 +83,12 @@ impl TextEditor {
             // Making a node on heap making the linked list point to it and then adding characters to the node.
             //hope this is idiomatic enough
             let node = Some(Rc::new(RefCell::new(Node::new(ch_array))));
+            self.rows.get_mut(self.terminal_cursor.y).unwrap().new_node(node.clone());
+
             let mut i = 0;
+
             while i < SIZE {
-                self.terminal_cursor.update();
+
                 if let Ok(key_event) = TextEditor::read_key() {
                     match key_event.code {
                         KeyCode::Char(c)
@@ -99,6 +102,9 @@ impl TextEditor {
                                 self.Read_Input(c);
                                 node_ref.add_char(c);
                                 i += 1;
+                                
+                                // let mut row = self.rows.get_mut(self.terminal_cursor.y).unwrap();
+                                // let moveright = self.cursor.move_cursor(Direction::Right, row.get_number_of_nodes(), row.get_last(), self.terminal_cursor.x);
                             }
                         }
                         KeyCode::Backspace => {
@@ -139,11 +145,11 @@ impl TextEditor {
                         KeyCode::Left => {
                             execute!(self.stdout, cursor::MoveLeft(1)).unwrap();
                             let mut row = self.rows.get_mut(self.terminal_cursor.y).unwrap();
-                            let moveright = self.cursor.move_cursor(Direction::Right, row.get_number_of_nodes(), row.get_last());
+                            let moveleft = self.cursor.move_cursor(Direction::Left, row.get_number_of_nodes(), row.get_last(), self.terminal_cursor.x);
                         }
                         KeyCode::Right => {
                             let mut row = self.rows.get_mut(self.terminal_cursor.y).unwrap();
-                            let moveright = self.cursor.move_cursor(Direction::Right, row.get_number_of_nodes(), row.get_last());
+                            let moveright = self.cursor.move_cursor(Direction::Right, row.get_number_of_nodes(), row.get_last(), self.terminal_cursor.x);
                             if moveright {
                                 execute!(self.stdout, cursor::MoveRight(1)).unwrap();
                             }
@@ -152,8 +158,8 @@ impl TextEditor {
                         _ => (),
                     }
                 }
+                self.terminal_cursor.update(); 
             }
-            self.rows.get_mut(self.terminal_cursor.y).unwrap().new_node(node.clone());
 
         }
     }

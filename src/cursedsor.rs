@@ -13,7 +13,6 @@ pub enum Direction {
 pub struct Cursedsor {
     current_node: usize, // Present Node in the Linked List
     index: usize,        // Present Index of the char array in the Node
-                         //
 }
 
 impl Cursedsor {
@@ -24,12 +23,19 @@ impl Cursedsor {
         }
     }
 
+    pub fn update(&mut self, term_cursor: usize) {
+        self.current_node = (term_cursor / SIZE) + 1;
+        self.index = (term_cursor % SIZE);
+    }
+
     pub fn move_cursor(
         &mut self,
         direction: Direction,
         number_of_nodes: usize,
-        last: Option<Rc<RefCell<Node>>>,
+        last: Option<Rc<RefCell<Node>>>, 
+        term_cursor: usize,
     ) -> bool {
+        self.update(term_cursor);
         match direction {
             Direction::Left => {
                 if self.index > 0 {
@@ -73,7 +79,7 @@ impl Cursedsor {
 
                 }
             }
-            true
+            false
         }
         pub fn print(&self) {
             print!("Node: {}", self.current_node);
