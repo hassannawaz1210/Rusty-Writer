@@ -63,9 +63,9 @@ impl TextEditor {
         loop {
             // Making a node on heap making the linked list point to it and then adding characters to the node.
             //hope this is idiomatic enough
-            node_numebr += 1;
-            let node = Some(Rc::new(RefCell::new(Node::new(ch_array, node_numebr))));
+            let node = Some(Rc::new(RefCell::new(Node::new(ch_array, node_numebr.clone()))));
             self.rows.get_mut(self.cursor.getY()).unwrap().new_node(node.clone());
+            node_numebr += 1;
 
             let mut i = 0;
 
@@ -73,8 +73,13 @@ impl TextEditor {
 
                 if let Ok(key_event) = TextEditor::read_key() {
 
-                    let current_node = self.cursor.getX()/SIZE;
-                    let last_node = self.rows.get_mut(self.cursor.getY()).unwrap().get_number_of_nodes();
+                    let mut current_node = self.cursor.getX()/SIZE;
+                    let mut last_node:usize = 0;
+                    let last = self.rows.get_mut(self.cursor.getY()).unwrap().get_last();
+                    if let Some(ref node) = last {
+                        let mut node_ref = RefCell::borrow_mut(&node);
+                        last_node = node_ref.num;
+                    }
 
                     match key_event.code {
                         KeyCode::Char(c)
@@ -93,7 +98,6 @@ impl TextEditor {
                             if let Some(ref node) = node {
                                 let mut node_ref = RefCell::borrow_mut(&node);
                                 self.Read_Input(c);
-                                node_ref.add_char(c);
 
                                 //if the cursor is present at the last node
                                 //TODO: also add the check that cursor is at the last INDEX
@@ -193,6 +197,8 @@ impl TextEditor {
                                 .unwrap();
                             }
 
+                            self.cursor.update();
+                            current_node = self.cursor.getX()/SIZE;
                             //updating the node numbers
                             if let Some(ref node) = node {
                             let mut node_ref = RefCell::borrow_mut(&node);

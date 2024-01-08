@@ -101,8 +101,8 @@ impl LinkedList {
         //use loop loop
             while let Some(node) = current {
                 let mut node_ref = RefCell::borrow_mut(&node);
-                if node_ref.num == other_node {
-                    node_ref.num = current_node;
+                if node_ref.num == current_node {
+                    node_ref.num = other_node;
                     break;
                 }
                 current = node_ref.next.clone();
