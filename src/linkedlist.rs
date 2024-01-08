@@ -13,14 +13,16 @@ pub struct Node {
     pub data: [char; SIZE],
     pub next: Option<Rc<RefCell<Node>>>,
     pub current_index: usize,
+    pub num: usize,
 }
 
 impl Node {
-    pub fn new(ch: [char; SIZE]) -> Self {
+    pub fn new(ch: [char; SIZE], n: usize) -> Self {
         Node {
             data: ['\0'; SIZE],
             next: None,
             current_index: 0,
+            num: n,
         }
     }
 
@@ -57,28 +59,8 @@ impl LinkedList {
     }
 
     pub fn insert(&mut self, data: [char; SIZE]) {
-        let boxed_node = Some(Rc::new(RefCell::new(Node::new(data))));
+        let boxed_node = Some(Rc::new(RefCell::new(Node::new(data, 0))));
         // if the root and last are none
-        if self.root.is_none() {
-            self.root = boxed_node.clone();
-            self.last = boxed_node.clone();
-            self.number_of_nodes += 1;
-        }
-        // Insert another node
-        else {
-            if let Some(last) = &self.last {
-                let mut node_ref = RefCell::borrow_mut(&last);
-                (*node_ref).next = boxed_node.clone();
-            }
-            self.last = boxed_node.clone();
-            self.number_of_nodes += 1;
-        }
-    }
-
-    //add_node and insert are the same except add_node is creating a node with empty array
-    pub fn add_node(&mut self) {
-        // if the root and last are none
-        let boxed_node = Some(Rc::new(RefCell::new(Node::new(['\0'; SIZE]))));
         if self.root.is_none() {
             self.root = boxed_node.clone();
             self.last = boxed_node.clone();
@@ -113,6 +95,24 @@ impl LinkedList {
         }
     }
 
+    pub fn update_node_numbers(&mut self, current_node: usize, other_node: usize) {
+        let mut current = self.root.clone();
+        //find the node with node with num = other_node, then replace it with current_node
+        //use loop loop
+        loop {
+            if let Some(node) = current {
+                let mut node_ref = RefCell::borrow_mut(&node);
+                if node_ref.num == other_node {
+                    node_ref.num = current_node;
+                    break;
+                }
+                current = node_ref.next.clone();
+            }
+        }
+        
+    }
+
+
     pub fn get_last(&mut self) -> Option<Rc<RefCell<Node>>> {
         self.last.clone()
     }
@@ -131,6 +131,7 @@ impl LinkedList {
             count
     }
 
+
     pub fn write_to_file(&self, f: &mut File) {
         let mut current = self.root.clone();
         while let Some(node) = current {
@@ -141,6 +142,27 @@ impl LinkedList {
                 panic!("Failed to write to file: {}", err);
             }
             current = node_ref.next.clone();
+        }
+    }
+
+    pub fn write_to_file_by_num(&self, f: &mut File) {
+      //write nodes to file according to their numbers in ascending order
+        let mut count = 0;
+        while count < self.number_of_nodes {
+            let mut current = self.root.clone();
+            while let Some(node) = current {
+                let node_ref = RefCell::borrow_mut(&node);
+                if node_ref.num == count {
+                    let data_string: String = node_ref.data.iter().filter(|&&c| c != '\0').collect();
+                    print!("{}", data_string);
+                    if let Err(err) = f.write(data_string.as_bytes()) {
+                        panic!("Failed to write to file: {}", err);
+                    }
+                    break;
+                }
+                current = node_ref.next.clone();
+            }
+            count += 1;
         }
     }
 

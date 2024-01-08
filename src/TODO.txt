@@ -1,0 +1,2 @@
+- attach "number of chars" to each row so we can easily get to the end of the row
+ 
