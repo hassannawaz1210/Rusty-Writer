@@ -57,11 +57,9 @@ use linkedlist::SIZE;
 
 fn main() {
     let mut tx = TextEditor::new();
-    let mut file: Result<File, io::Error> = File::create("out.txt");
 
     TextEditor::setup(&mut tx);
     TextEditor::run(&mut tx);
 
-    // list.write_to_file(&mut file.unwrap());
     println!("{:#?}", tx.rows);
 }

@@ -58,11 +58,13 @@ impl TextEditor {
 
 
     pub fn run(&mut self) {    
+        let mut node_numebr = 0;
         let ch_array = ['\0'; SIZE];
         loop {
             // Making a node on heap making the linked list point to it and then adding characters to the node.
             //hope this is idiomatic enough
-            let node = Some(Rc::new(RefCell::new(Node::new(ch_array))));
+            node_numebr += 1;
+            let node = Some(Rc::new(RefCell::new(Node::new(ch_array, node_numebr))));
             self.rows.get_mut(self.cursor.getY()).unwrap().new_node(node.clone());
 
             let mut i = 0;
@@ -70,16 +72,20 @@ impl TextEditor {
             while i < SIZE {
 
                 if let Ok(key_event) = TextEditor::read_key() {
+
+                    let current_node = self.cursor.getX()/SIZE;
+                    let last_node = self.rows.get_mut(self.cursor.getY()).unwrap().get_number_of_nodes();
+
                     match key_event.code {
                         KeyCode::Char(c)
                             if key_event.modifiers == event::KeyModifiers::CONTROL && c == 's' => {
                                 // save file
                                 let mut file = std::fs::File::create("test.txt").unwrap();
                                 for row in self.rows.iter() {
-                                    row.write_to_file(file.borrow_mut());
+                                    row.write_to_file_by_num(file.borrow_mut());
                                     file.write_all(b"\n").unwrap();
                                 };
-                                println!("File saved.");
+                                print!("File saved.");
                         }
 
                         KeyCode::Char(c) => {
@@ -88,6 +94,17 @@ impl TextEditor {
                                 let mut node_ref = RefCell::borrow_mut(&node);
                                 self.Read_Input(c);
                                 node_ref.add_char(c);
+
+                                //if the cursor is present at the last node
+                                //TODO: also add the check that cursor is at the last INDEX
+                               
+                                if current_node == last_node {
+                                    node_ref.add_char(c);
+                                }
+
+                                //if cursor is not at the last node: 2 Cases
+                                //1. cursor is at the end of any node
+                                //2. cursor is in the middle of any node
                                 i += 1;
                             }
                         }
@@ -160,6 +177,20 @@ impl TextEditor {
                                 let upper_row_len = self.rows.get_mut(self.cursor.getY() - 1).unwrap().get_row_len();
                                 execute!(self.stdout, cursor::MoveTo(upper_row_len as u16, (self.cursor.getY() - 1) as u16)).unwrap();
                             }
+
+                             //updating the node numbers
+                                if let Some(ref node) = node {
+                                let mut node_ref = RefCell::borrow_mut(&node);
+
+                                if current_node != last_node{
+                                    let other_node = node_ref.num;
+                                    node_ref.num = current_node;
+
+                                    let row = self.rows.get_mut(self.cursor.getY()).unwrap();
+                                    row.update_node_numbers(current_node, other_node); //replace current with other
+
+                                }
+                            }
                                 
                             }
 
@@ -168,6 +199,21 @@ impl TextEditor {
 
                             if current_row_len > self.cursor.getX() {
                                 execute!(self.stdout, cursor::MoveRight(1)).unwrap();
+                            }
+
+
+                             //updating the node numbers
+                                if let Some(ref node) = node {
+                                let mut node_ref = RefCell::borrow_mut(&node);
+
+                                if current_node != last_node{
+                                    let other_node = node_ref.num;
+                                    node_ref.num = current_node;
+
+                                    let row = self.rows.get_mut(self.cursor.getY()).unwrap();
+                                    row.update_node_numbers(current_node, other_node); //replace current with other
+
+                                }
                             }
 
                         }
