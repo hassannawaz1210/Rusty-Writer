@@ -171,31 +171,50 @@ impl TextEditor {
 
                         KeyCode::Left => {
                             // Hassan u were right there is an easier way XD
+                            let mut other_node = None;
+                            let mut flag = false;
+
                             if self.cursor.getX() > 0 {
                                 execute!(self.stdout, cursor::MoveLeft(1)).unwrap();
-                            } else if self.cursor.getY() > 0 { // if the cursor is at the start of the line move upwards and to the end of the line
-                                let upper_row_len = self.rows.get_mut(self.cursor.getY() - 1).unwrap().get_row_len();
-                                execute!(self.stdout, cursor::MoveTo(upper_row_len as u16, (self.cursor.getY() - 1) as u16)).unwrap();
+                            } else if self.cursor.getY() > 0 {
+                                // if the cursor is at the start of the line move upwards and to the end of the line
+                                let upper_row_len = self
+                                    .rows
+                                    .get_mut(self.cursor.getY() - 1)
+                                    .unwrap()
+                                    .get_row_len();
+                                execute!(
+                                    self.stdout,
+                                    cursor::MoveTo(
+                                        upper_row_len as u16,
+                                        (self.cursor.getY() - 1) as u16
+                                    )
+                                )
+                                .unwrap();
                             }
 
-                             //updating the node numbers
-                                if let Some(ref node) = node {
-                                let mut node_ref = RefCell::borrow_mut(&node);
+                            //updating the node numbers
+                            if let Some(ref node) = node {
+                            let mut node_ref = RefCell::borrow_mut(&node);
 
                                 if current_node != last_node{
-                                    let other_node = node_ref.num;
+                                    other_node = Some(node_ref.num);
                                     node_ref.num = current_node;
-
-                                    let row = self.rows.get_mut(self.cursor.getY()).unwrap();
-                                    row.update_node_numbers(current_node, other_node); //replace current with other
-
+                                    flag = true;
                                 }
+                                // U were borrowing mutable for node and after which u were trying to borrow mutable in the function again 
+                            }
+                            if flag {
+                                let row = self.rows.get_mut(self.cursor.getY()).unwrap();
+                                    row.update_node_numbers(current_node, other_node.unwrap()); //replace current with other
                             }
                                 
-                            }
+                        }
 
                         KeyCode::Right => {
                             let current_row_len = self.rows.get_mut(self.cursor.getY()).unwrap().get_row_len();
+                            let mut other_node = None;
+                            let mut flag = false;
 
                             if current_row_len > self.cursor.getX() {
                                 execute!(self.stdout, cursor::MoveRight(1)).unwrap();
@@ -207,13 +226,16 @@ impl TextEditor {
                                 let mut node_ref = RefCell::borrow_mut(&node);
 
                                 if current_node != last_node{
-                                    let other_node = node_ref.num;
+                                    other_node = Some(node_ref.num);
                                     node_ref.num = current_node;
-
-                                    let row = self.rows.get_mut(self.cursor.getY()).unwrap();
-                                    row.update_node_numbers(current_node, other_node); //replace current with other
+                                    flag = true;
+                                    
 
                                 }
+                            }
+                            if flag {
+                                let row = self.rows.get_mut(self.cursor.getY()).unwrap();
+                                    row.update_node_numbers(current_node, other_node.unwrap()); //replace current with other
                             }
 
                         }
