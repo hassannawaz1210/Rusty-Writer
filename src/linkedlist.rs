@@ -99,8 +99,7 @@ impl LinkedList {
         let mut current = self.root.clone();
         //find the node with node with num = other_node, then replace it with current_node
         //use loop loop
-        loop {
-            if let Some(node) = current {
+            while let Some(node) = current {
                 let mut node_ref = RefCell::borrow_mut(&node);
                 if node_ref.num == other_node {
                     node_ref.num = current_node;
@@ -108,7 +107,6 @@ impl LinkedList {
                 }
                 current = node_ref.next.clone();
             }
-        }
         
     }
 
