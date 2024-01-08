@@ -113,6 +113,26 @@ impl LinkedList {
         }
     }
 
+    pub fn insert_after(&mut self, n :Option<Rc<RefCell<Node>>>, index: usize) {
+        let mut current = self.root.clone();
+        let mut count = 0;
+        while let Some(node) = current {
+            let mut node = RefCell::borrow_mut(&node);
+            if count == index {
+                if let Some(ref new_node) = n {
+                    let mut new_node = RefCell::borrow_mut(&new_node);
+                    new_node.next = node.next.clone();
+                                        
+                }
+                (*node).next = n.clone();
+                self.number_of_nodes += 1;
+            }
+            count += 1;
+            current = node.next.clone();
+        }
+    }
+
+
     pub fn get_last(&mut self) -> Option<Rc<RefCell<Node>>> {
         self.last.clone()
     }
@@ -122,6 +142,9 @@ impl LinkedList {
        //fukin copepilot 
          let mut current = self.root.clone();
             let mut count = 1;
+            if self.number_of_nodes == 0 {
+                return 0;
+            }
             count *= self.number_of_nodes  - 1;
             count *= SIZE;
             if let Some(node) = &self.last {
@@ -136,7 +159,6 @@ impl LinkedList {
         while let Some(node) = current {
             let node_ref = RefCell::borrow_mut(&node);
             let data_string: String = node_ref.data.iter().filter(|&&c| c != '\0').collect();
-            print!("{}", data_string);
             if let Err(err) = f.write(data_string.as_bytes()) {
                 panic!("Failed to write to file: {}", err);
             }

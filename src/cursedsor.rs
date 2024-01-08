@@ -54,6 +54,10 @@ impl Cursedsor {
         self.termCursor.y
     }
 
+    pub fn get_node(&self) -> usize {
+        self.current_node
+    }
+
     pub fn update(&mut self) {
         self.termCursor.update();
         self.current_node = (self.termCursor.x / SIZE) + 1;
